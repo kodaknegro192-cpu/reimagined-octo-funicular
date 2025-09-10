@@ -2,10 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Phone Tracker</title>
+    <title>Phone Tracker Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map { height: 500px; width: 100%; margin-top: 20px; }
+        body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; }
+    </style>
 </head>
 <body>
-    <h1>Aplicația funcționează!</h1>
-    <p>Markerul locației va apărea aici.</p>
+    <h1>Phone Tracker cu Hartă</h1>
+    <p>Locația ta va fi afișată pe hartă în timp real.</p>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        function addMarker(lat, lon) {
+            L.marker([lat, lon]).addTo(map);
+            map.setView([lat, lon], 13);
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                fetch('/save_location', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    })
+                })
+                .then(response => response.json())
+                .then(data => addMarker(position.coords.latitude, position.coords.longitude));
+            });
+        }
+
+        function loadHistory() {
+            fetch('/history')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(item => addMarker(item.lat, item.lon));
+                });
+        }
+
+        setTimeout(loadHistory, 1000);
+    </script>
 </body>
 </html>
